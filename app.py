@@ -15,7 +15,7 @@ def load_model():
 
 @app.route("/")
 def hello() :
-    return "<h1>hi</h1>"
+        return "<img src='http://dn-m.talk.kakao.com/talkm/bl5YbDa3GCC/KbUKUw904pQpPcQytFNoTK/i_aa21d62d4558.png' alt='이미지'>"
 
 
 @app.route("/api/predict", methods=["POST"])
@@ -27,6 +27,7 @@ def api_predict():
     print(req)
 
     class_names = open('labels.txt', 'r').readlines()
+
 
 
 # 이미지 전처리 - 발화가 jpg, png 확장자일 때만 실행
