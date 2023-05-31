@@ -5,7 +5,12 @@ from PIL import Image, ImageOps
 import numpy as np
 import ast
 
+<<<<<<< HEAD
 # Use app with Flask Server
+=======
+
+# assign flask
+>>>>>>> 550cf1b07848e0a79f621636d658b4dc006bcd93
 app = flask.Flask(__name__)
 
 # Predefine third_class_names, third_model
@@ -19,7 +24,11 @@ third_class_names = None
 third_model = None
 
 
+<<<<<<< HEAD
 # run model
+=======
+# load model
+>>>>>>> 550cf1b07848e0a79f621636d658b4dc006bcd93
 def load_model():
     global third_class_names, third_model
 
@@ -27,10 +36,16 @@ def load_model():
     third_model = tensorflow.keras.models.load_model('keras_model.h5', compile=False)
 
 
+<<<<<<< HEAD
 # Main home page
 @app.route('/')
 def main():
     return "<h1>안녕</h1>"
+=======
+@app.route("/")
+def hello() :
+        return "<h1>홈페이지 입니다 안녕하세요</h1>"
+>>>>>>> 550cf1b07848e0a79f621636d658b4dc006bcd93
 
 
 # chatbot api
