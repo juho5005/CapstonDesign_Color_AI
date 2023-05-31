@@ -4,10 +4,13 @@ import urllib.request
 from PIL import Image, ImageOps
 import numpy as np
 
+
+# assign flask
 app = flask.Flask(__name__)
 model = None
 
 
+# load model
 def load_model():
     global model
     model = tensorflow.keras.models.load_model('keras_model.h5', compile=False)
@@ -15,7 +18,7 @@ def load_model():
 
 @app.route("/")
 def hello() :
-        return "<img src='http://dn-m.talk.kakao.com/talkm/bl5YbDa3GCC/KbUKUw904pQpPcQytFNoTK/i_aa21d62d4558.png' alt='이미지'>"
+        return "<h1>홈페이지 입니다 안녕하세요</h1>"
 
 
 @app.route("/api/predict", methods=["POST"])
