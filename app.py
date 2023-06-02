@@ -4,6 +4,7 @@ import urllib.request
 from PIL import Image, ImageOps
 import numpy as np
 import ast
+import mysql.connector
 
 # Use app with Flask Server
 app = flask.Flask(__name__)
@@ -34,6 +35,16 @@ second_model = None
 '''
 third_class_names = None
 third_model = None
+
+
+config = {
+    'user': 'cray7',
+    'password': 'dgu1234!',
+    'host': '43.200.153.107',
+    'port': '57223',
+    'database': 'cray7db'
+}
+conn = mysql.connector.connect(**config)
 
 
 
@@ -80,6 +91,22 @@ def api_first_predict():
     saved_image_url = new_url[5:-1]
     print(f"저장된 최종 이미지 url : {saved_image_url}")
     print()
+    
+    # # 커서 시작
+    # cursor = conn.cursor()
+    
+    # insert_query = "INSERT INTO test (user_id, image) VALUES (%s, %s)"
+    # data = (user_id, saved_image_url)
+    # cursor.execute(insert_query, data)
+    # conn.commit()
+    
+    # # 커서와 연결 종료
+    # cursor.close()
+
+    
+    
+    
+    
 
     np.set_printoptions(suppress=True)
     data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
@@ -189,6 +216,17 @@ def api_second_predict():
     print(f"저장된 최종 이미지 url : {saved_image_url}")
     print()
 
+    # # 커서 시작
+    # cursor = conn.cursor()
+
+    # insert_query = "INSERT INTO test (user_id, image) VALUES (%s, %s)"
+    # data = (user_id, saved_image_url)
+    # cursor.execute(insert_query, data)
+    # conn.commit()
+
+    # # 커서와 연결 종료
+    # cursor.close()
+
     np.set_printoptions(suppress=True)
     data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
 
@@ -296,6 +334,17 @@ def api_third_predict():
     print(f"저장된 최종 이미지 url : {saved_image_url}")
     print()
 
+    # # 커서 시작
+    # cursor = conn.cursor()
+
+    # insert_query = "INSERT INTO test (user_id, image) VALUES (%s, %s)"
+    # data = (user_id, saved_image_url)
+    # cursor.execute(insert_query, data)
+    # conn.commit()
+
+    # # 커서와 연결 종료
+    # cursor.close()
+
     np.set_printoptions(suppress=True)
     data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
 
@@ -371,6 +420,10 @@ def api_third_predict():
     print(res)
     return flask.jsonify(res)
 
+# Quiz
+@app.route("/quiz", methods=["POST"])
+def quiz():
+    pass 
 
 if __name__ == "__main__":
     load_first_model()
