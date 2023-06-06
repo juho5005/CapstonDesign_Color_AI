@@ -1,10 +1,11 @@
-import tensorflow
+# import tensorflow
 import flask
 import urllib.request
 from PIL import Image, ImageOps
 import numpy as np
 import ast
 import mysql.connector
+import random
 
 # Use app with Flask Server
 app = flask.Flask(__name__)
@@ -37,6 +38,11 @@ third_class_names = None
 third_model = None
 
 
+quiz_cnt = 0
+quiz_O = 0
+quiz_X = 0
+
+
 config = {
     'user': 'cray7',
     'password': 'dgu1234!',
@@ -67,6 +73,7 @@ def load_first_model():
 # first model api
 @app.route("/api/first/predict", methods=["POST"])
 def api_first_predict():
+    global type_dic
     global first_class_names, first_model
 
     # UserRequest 중 발화를 req에 parsing.
@@ -91,22 +98,6 @@ def api_first_predict():
     saved_image_url = new_url[5:-1]
     print(f"저장된 최종 이미지 url : {saved_image_url}")
     print()
-    
-    # # 커서 시작
-    # cursor = conn.cursor()
-    
-    # insert_query = "INSERT INTO test (user_id, image) VALUES (%s, %s)"
-    # data = (user_id, saved_image_url)
-    # cursor.execute(insert_query, data)
-    # conn.commit()
-    
-    # # 커서와 연결 종료
-    # cursor.close()
-
-    
-    
-    
-    
 
     np.set_printoptions(suppress=True)
     data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
@@ -145,6 +136,29 @@ def api_first_predict():
         color = '빨간색'
     elif str(class_name[2:]).strip() == 'green':
         color = "초록색"
+
+    # 사용자가 어떤 색각이상 타입인지 확인
+    # 커서 시작
+    cursor = conn.cursor()
+    query = "SELECT * FROM user_type"
+    cursor.execute(query)
+    result = cursor.fetchall()
+
+    type_answer = ''
+    for r in result:
+        if r[0] == user_id:
+            type_answer = r[1]
+            break
+
+    # 커서 시작
+    cursor = conn.cursor()
+    insert_query = "INSERT INTO quiz (user_id, type1, image, answer) VALUES (%s, %s, %s, %s)"
+    data = (user_id, type_answer, saved_image_url, color)
+    cursor.execute(insert_query, data)
+    conn.commit()
+
+    # 커서와 연결 종료
+    cursor.close()
 
     msg = color
     print(msg)
@@ -188,7 +202,7 @@ def load_second_model():
     second_model = tensorflow.keras.models.load_model('keras_second_model.h5', compile=False)
     
     
-# first model api
+# second model api
 @app.route("/api/second/predict", methods=["POST"])
 def api_second_predict():
     global second_class_names, second_model
@@ -215,17 +229,6 @@ def api_second_predict():
     saved_image_url = new_url[5:-1]
     print(f"저장된 최종 이미지 url : {saved_image_url}")
     print()
-
-    # # 커서 시작
-    # cursor = conn.cursor()
-
-    # insert_query = "INSERT INTO test (user_id, image) VALUES (%s, %s)"
-    # data = (user_id, saved_image_url)
-    # cursor.execute(insert_query, data)
-    # conn.commit()
-
-    # # 커서와 연결 종료
-    # cursor.close()
 
     np.set_printoptions(suppress=True)
     data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
@@ -264,6 +267,17 @@ def api_second_predict():
         color = '황색'
     elif str(class_name[2:]).strip() == 'blue':
         color = "청색"
+
+    # 커서 시작
+    cursor = conn.cursor()
+
+    insert_query = "INSERT INTO user1 (user_id, image, answer) VALUES (%s, %s, %s)"
+    data = (user_id, saved_image_url, color)
+    cursor.execute(insert_query, data)
+    conn.commit()
+
+    # 커서와 연결 종료
+    cursor.close()
 
     msg = color
     print(msg)
@@ -334,17 +348,6 @@ def api_third_predict():
     print(f"저장된 최종 이미지 url : {saved_image_url}")
     print()
 
-    # # 커서 시작
-    # cursor = conn.cursor()
-
-    # insert_query = "INSERT INTO test (user_id, image) VALUES (%s, %s)"
-    # data = (user_id, saved_image_url)
-    # cursor.execute(insert_query, data)
-    # conn.commit()
-
-    # # 커서와 연결 종료
-    # cursor.close()
-
     np.set_printoptions(suppress=True)
     data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
 
@@ -390,6 +393,17 @@ def api_third_predict():
     else:
         color = "황색"
 
+    # 커서 시작
+    cursor = conn.cursor()
+
+    insert_query = "INSERT INTO user1 (user_id, image, answer) VALUES (%s, %s, %s)"
+    data = (user_id, saved_image_url, color)
+    cursor.execute(insert_query, data)
+    conn.commit()
+
+    # 커서와 연결 종료
+    cursor.close()
+
     msg = color
     print(msg)
 
@@ -420,13 +434,450 @@ def api_third_predict():
     print(res)
     return flask.jsonify(res)
 
+
 # Quiz
 @app.route("/quiz", methods=["POST"])
 def quiz():
-    pass 
+    global quiz_cnt, quiz_O, quiz_X
+    # UserRequest 중 발화를 req에 parsing.
+    req = flask.request.get_json()
+    user_id = req['userRequest']['user']['id']
+    print(f'사용자 아이디 : {user_id}')
+
+    speak = req['userRequest']['utterance']
+    print(f'사용자의 발화가 들어왔을 때를 나타냄 : {speak}')
+
+    if '정답' in speak:
+        quiz_cnt += 1
+        quiz_O += 1
+
+    elif '오답' in speak:
+        quiz_cnt += 1
+        quiz_X += 1
+
+    # quiz문제를 다 푼 경우
+    if quiz_cnt == 3:
+        quiz_cnt = 0
+        correct = quiz_O
+        quiz_O = 0
+        wrong = quiz_X
+        quiz_X = 0
+
+        # Basic Card Format
+        res = {
+          "version": "2.0",
+          "template": {
+            "outputs": [
+              {
+                "basicCard": {
+                  "title": f"사용자님은 3문제 중 {correct}개 맞추셨습니다",
+                  "description": f"사용자님의 틀린 {wrong}개의 사진의 가중치가 올라가서 다음번에 다시 출제됩니다.",
+                  "thumbnail": {
+                    "imageUrl": 'https://blog.amazingtalker.com/wp-content/uploads/2022/09/Congrats-1024x683.jpg'
+                  }
+                }
+              }
+            ]
+          }
+        }
+
+        # 커서 시작
+        cursor = conn.cursor()
+        insert_query = "INSERT INTO quiz_history (user_id, correct, wrong) VALUES (%s, %s, %s)"
+        data = (user_id, correct, wrong)
+        cursor.execute(insert_query, data)
+        conn.commit()
+
+        # 커서와 연결 종료
+        cursor.close()
+
+        return flask.jsonify(res)
+
+
+
+
+
+
+    # 사용자가 어떤 색각이상 유형인지 파악
+    # 커서 시작
+    cursor = conn.cursor()
+    query = "SELECT * FROM user_type"
+    cursor.execute(query)
+
+    result = cursor.fetchall()
+
+    color_type = ''
+    for r in result:
+        if r[0] == user_id:
+            color_type = r[1]
+
+    # 사용자의 색각이상 유형이 정의되지않았다면
+    if color_type == '':
+        print("사용자의 색각이상이 정의되지 않은 경우")
+        res = {
+            "version": "2.0",
+            "template": {
+                "outputs": [
+                    {
+                        "simpleText": {
+                            "text": f"사용자의 색각 이상 유형이 정의되지 않았습니다. 색각이상 TEST에서 색각이상유형을 등록해주세요!"
+                        }
+                    }
+                ]
+            }
+        }
+        # 커서와 연결 종료
+        cursor.close()
+        return res
+
+    print(f'사용자의 색각이상은 {color_type}입니다')
+
+
+    if color_type == '적록색맹':
+        final_ans = ''
+        query1 = "SELECT * FROM red"
+        cursor.execute(query1)
+
+        result1 = cursor.fetchall()
+
+        query2 = "SELECT * FROM green"
+        cursor.execute(query2)
+
+        result2 = cursor.fetchall()
+
+        # 빨간색 고를지 초록색 고를지
+        color_num = random.randint(1, 3)
+
+        # 빨간색으로 퀴즈 내기
+        if color_num == 1:
+            img_link = ''
+            cnt = 0
+            for r in result1:
+                cnt += 1
+            img_idx = random.randint(1, cnt)
+            img_link = result1[img_idx][1]
+            final_ans = '빨간색'
+
+        # 초록색으로 퀴즈 내기
+        else:
+            img_link = ''
+            cnt = 0
+            for r in result2:
+                cnt += 1
+            img_idx = random.randint(1, cnt)
+            img_link = result2[img_idx][1]
+            final_ans = '초록색'
+
+        # 커서와 연결 종료
+        cursor.close()
+
+        if final_ans == '빨간색':
+            # Basic Card Format (빨간색인 경우)
+            res = {
+              "version": "2.0",
+              "template": {
+                "outputs": [
+                  {
+                    "basicCard": {
+                      "title": "위 사진의 색깔을 맞춰보세요!",
+                      "description": "빨강색 / 초록색",
+                      "thumbnail": {
+                        "imageUrl": img_link
+                      },
+                      "buttons": [
+                        {
+                          "action": "message",
+                          "label": "빨간색",
+                          "messageText": f"답은 {final_ans}입니다. 정답입니다!"
+                        },
+                        {
+                          "action": "message",
+                          "label": "초록색",
+                          "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+        else:
+            # Basic Card Format (초록색인 경우)
+            res = {
+              "version": "2.0",
+              "template": {
+                "outputs": [
+                  {
+                    "basicCard": {
+                      "title": "위 사진의 색깔을 맞춰보세요!",
+                      "description": "빨강색 / 초록색",
+                      "thumbnail": {
+                        "imageUrl": img_link
+                      },
+                      "buttons": [
+                        {
+                          "action": "message",
+                          "label": "빨간색",
+                          "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                        },
+                        {
+                          "action": "message",
+                          "label": "초록색",
+                          "messageText": f"답은 {final_ans}입니다. 정답입니다!"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+        return flask.jsonify(res)
+
+
+    elif color_type == '황청색맹':
+        final_ans = ''
+        query1 = "SELECT * FROM brown"
+        cursor.execute(query1)
+
+        result1 = cursor.fetchall()
+
+        query2 = "SELECT * FROM blue"
+        cursor.execute(query2)
+
+        result2 = cursor.fetchall()
+
+        # 황색 고를지, 청색 고를지
+        color_num = random.randint(1, 3)
+
+        # 황색으로 퀴즈 내기
+        if color_num == 1:
+            img_link = ''
+            cnt = 0
+            for r in result1:
+                cnt += 1
+            img_idx = random.randint(1, cnt)
+            img_link = result1[img_idx][1]
+            final_ans = '황색'
+
+        # 청색으로 퀴즈 내기
+        else:
+            img_link = ''
+            cnt = 0
+            for r in result2:
+                cnt += 1
+            img_idx = random.randint(1, cnt)
+            img_link = result2[img_idx][1]
+            final_ans = '청색'
+
+        # 커서와 연결 종료
+        cursor.close()
+
+        if final_ans == '황색':
+            # Basic Card Format (황색인 경우)
+            res = {
+              "version": "2.0",
+              "template": {
+                "outputs": [
+                  {
+                    "basicCard": {
+                      "title": "위 사진의 색깔을 맞춰보세요!",
+                      "description": "황색 / 청색",
+                      "thumbnail": {
+                        "imageUrl": img_link
+                      },
+                      "buttons": [
+                        {
+                          "action": "message",
+                          "label": "황색",
+                          "messageText": f"답은 {final_ans}입니다. 정답입니다!"
+                        },
+                        {
+                          "action": "message",
+                          "label": "청색",
+                          "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+        else:
+            # Basic Card Format (청색인 경우)
+            res = {
+              "version": "2.0",
+              "template": {
+                "outputs": [
+                  {
+                    "basicCard": {
+                      "title": "위 사진의 색깔을 맞춰보세요!",
+                      "description": "황색 / 청색",
+                      "thumbnail": {
+                        "imageUrl": img_link
+                      },
+                      "buttons": [
+                        {
+                          "action": "message",
+                          "label": "황색",
+                          "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                        },
+                        {
+                          "action": "message",
+                          "label": "청색",
+                          "messageText": f"답은 {final_ans}입니다. 정답입니다!"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+        return flask.jsonify(res)
+
+
+
+
+
+    query = "SELECT * FROM blue"
+    cursor.execute(query)
+
+    result = cursor.fetchall()
+
+    img_link = ''
+    cnt = 0
+    for r in result:
+        cnt += 1
+
+    img_idx = random.randint(1, cnt+1)
+    img_link = result[img_idx][1]
+
+    # 커서와 연결 종료
+    cursor.close()
+
+    # Basic Card Format
+    res = {
+      "version": "2.0",
+      "template": {
+        "outputs": [
+          {
+            "basicCard": {
+              "title": "위 사진의 색깔을 맞춰보세요!",
+              "description": "빨강색 / 초록색 / 황색 / 청색",
+              "thumbnail": {
+                "imageUrl": img_link
+              },
+              "buttons": [
+                {
+                  "action": "message",
+                  "label": "빨간색",
+                  "messageText": "빨간색입니다~"
+                },
+                {
+                  "action": "message",
+                  "label": "초록색",
+                  "messageText": "초록색입니다~"
+                },
+                {
+                  "action": "message",
+                  "label": "황색",
+                  "messageText": "황색입니다~"
+                },
+                {
+                  "action": "message",
+                  "label": "청색",
+                  "messageText": "청색입니다~"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+    return flask.jsonify(res)
+
+
+# 사용자가 어떤 색각이상자인지 저장
+@app.route("/problem", methods=["POST"])
+def problem():
+    # UserRequest 중 발화를 req에 parsing.
+    req = flask.request.get_json()
+    user_id = req['userRequest']['user']['id']
+    print(f'사용자의 아이디 {user_id}')
+
+    contents = req['userRequest']['utterance']
+    print(f'사용자의 발화가 들어왔을 때를 나타냄 : {contents}')
+
+    if contents == '아니요, 잘 돼요':
+        res = {
+            "version": "2.0",
+            "template": {
+                "outputs": [
+                    {
+                        "simpleText": {
+                            "text": f"사용자님은 정상입니다!"
+                        }
+                    }
+                ]
+            }
+        }
+        return res
+
+    type_ans = ''
+    if '(T)' == contents[-3:]:
+        type_ans = '황청색맹'
+    elif '(A)' == contents[-3:]:
+        type_ans = '전색맹'
+    elif '(P)' or '(D)' == contents[-3:]:
+        type_ans = '적록색맹'
+    print(f'판별된 색맹 : {type_ans}')
+
+    # 사용자의 색각이상 타입이 정해졌는지 확인하기
+    # 커서 시작
+    cursor = conn.cursor()
+    query = "SELECT * FROM user_type"
+    cursor.execute(query)
+
+    result = cursor.fetchall()
+
+    is_exist = False
+
+    for r in result:
+        if r[0] == user_id:
+            is_exist = True
+            break
+
+    if not is_exist:
+        insert_query = "INSERT INTO user_type (user_id, type) VALUES (%s, %s)"
+        data = (user_id, type_ans)
+        cursor.execute(insert_query, data)
+        conn.commit()
+
+    else:
+        insert_query = "UPDATE user_type SET type=%s where user_id = %s"
+        data = (type_ans, user_id)
+        cursor.execute(insert_query, data)
+        conn.commit()
+
+    # 커서와 연결 종료
+    cursor.close()
+
+    res = {
+        "version": "2.0",
+        "template": {
+            "outputs": [
+                {
+                    "simpleText": {
+                        "text": f"사용자의 색각이상 유형을 등록했습니다." + "\n" + "색각 이상 Quiz를 이용해보세요!"
+                    }
+                }
+            ]
+        }
+    }
+    return res
+
 
 if __name__ == "__main__":
-    load_first_model()
-    load_second_model()
-    load_third_model()
+    # load_first_model()
+    # load_second_model()
+    # load_third_model()
     app.run(host='0.0.0.0', debug=True)
