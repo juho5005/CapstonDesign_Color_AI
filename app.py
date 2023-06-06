@@ -1,4 +1,4 @@
-# import tensorflow
+import tensorflow
 import flask
 import urllib.request
 from PIL import Image, ImageOps
@@ -268,11 +268,23 @@ def api_second_predict():
     elif str(class_name[2:]).strip() == 'blue':
         color = "청색"
 
+    # 사용자가 어떤 색각이상 타입인지 확인
     # 커서 시작
     cursor = conn.cursor()
+    query = "SELECT * FROM user_type"
+    cursor.execute(query)
+    result = cursor.fetchall()
 
-    insert_query = "INSERT INTO user1 (user_id, image, answer) VALUES (%s, %s, %s)"
-    data = (user_id, saved_image_url, color)
+    type_answer = ''
+    for r in result:
+        if r[0] == user_id:
+            type_answer = r[1]
+            break
+
+    # 커서 시작
+    cursor = conn.cursor()
+    insert_query = "INSERT INTO quiz (user_id, type1, image, answer) VALUES (%s, %s, %s, %s)"
+    data = (user_id, type_answer, saved_image_url, color)
     cursor.execute(insert_query, data)
     conn.commit()
 
@@ -392,12 +404,24 @@ def api_third_predict():
         color = "초록색"
     else:
         color = "황색"
+        
+    # 사용자가 어떤 색각이상 타입인지 확인
+    # 커서 시작
+    cursor = conn.cursor()
+    query = "SELECT * FROM user_type"
+    cursor.execute(query)
+    result = cursor.fetchall()
+
+    type_answer = ''
+    for r in result:
+        if r[0] == user_id:
+            type_answer = r[1]
+            break
 
     # 커서 시작
     cursor = conn.cursor()
-
-    insert_query = "INSERT INTO user1 (user_id, image, answer) VALUES (%s, %s, %s)"
-    data = (user_id, saved_image_url, color)
+    insert_query = "INSERT INTO quiz (user_id, type1, image, answer) VALUES (%s, %s, %s, %s)"
+    data = (user_id, type_answer, saved_image_url, color)
     cursor.execute(insert_query, data)
     conn.commit()
 
@@ -777,7 +801,7 @@ def quiz():
             for r in result1:
                 cnt += 1
             img_idx = random.randint(1, cnt)
-            img_link = result1[img_idx][1]
+            img_link = result2[img_idx][1]
             final_ans = '초록색'
 
         # 황색으로 퀴즈 내기
@@ -787,7 +811,7 @@ def quiz():
             for r in result1:
                 cnt += 1
             img_idx = random.randint(1, cnt)
-            img_link = result1[img_idx][1]
+            img_link = result3[img_idx][1]
             final_ans = '황색'
 
         # 청색으로 퀴즈 내기
@@ -797,7 +821,7 @@ def quiz():
             for r in result2:
                 cnt += 1
             img_idx = random.randint(1, cnt)
-            img_link = result2[img_idx][1]
+            img_link = result4[img_idx][1]
             final_ans = '청색'
 
         # 커서와 연결 종료
@@ -1016,7 +1040,7 @@ def quiz():
                             {
                               "action": "message",
                               "label": "청색",
-                              "messageText": f"답은 {final_ans}입니다. 청색입니다!"
+                              "messageText": f"답은 {final_ans}입니다. 정답입니다!"
                             }
                           ]
                         }
@@ -1100,7 +1124,7 @@ def problem():
             "outputs": [
                 {
                     "simpleText": {
-                        "text": f"사용자의 색각이상 유형을 등록했습니다." + "\n" + "색각 이상 Quiz를 이용해보세요!"
+                        "text": f"색각이상 유형을 등록했습니다." + "\n" + "색각 이상 Quiz를 이용해보세요!" + "\n"+ f'사용자는 {type_ans}유형입니다.'
                     }
                 }
             ]
@@ -1110,7 +1134,7 @@ def problem():
 
 
 if __name__ == "__main__":
-    # load_first_model()
-    # load_second_model()
-    # load_third_model()
+    load_first_model()
+    load_second_model()
+    load_third_model()
     app.run(host='0.0.0.0', debug=True)
