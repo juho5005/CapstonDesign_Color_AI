@@ -735,65 +735,298 @@ def quiz():
         return flask.jsonify(res)
 
 
+    # 전색맹인 경우
+    else:
+        final_ans = ''
+        query1 = "SELECT * FROM red"
+        cursor.execute(query1)
 
+        result1 = cursor.fetchall()
 
+        query2 = "SELECT * FROM green"
+        cursor.execute(query2)
 
-    query = "SELECT * FROM blue"
-    cursor.execute(query)
+        result2 = cursor.fetchall()
 
-    result = cursor.fetchall()
+        query3 = "SELECT * FROM brown"
+        cursor.execute(query3)
+        result3 = cursor.fetchall()
 
-    img_link = ''
-    cnt = 0
-    for r in result:
-        cnt += 1
+        query4 = "SELECT * FROM blue"
+        cursor.execute(query4)
+        result4 = cursor.fetchall()
 
-    img_idx = random.randint(1, cnt+1)
-    img_link = result[img_idx][1]
+        
+        # 빨, 초, 황, 청 뭘 고를지 고민
+        color_num = random.randint(1, 5)
 
-    # 커서와 연결 종료
-    cursor.close()
+        # 빨간색으로 퀴즈 내기
+        if color_num == 1:
+            img_link = ''
+            cnt = 0
+            for r in result1:
+                cnt += 1
+            img_idx = random.randint(1, cnt)
+            img_link = result1[img_idx][1]
+            final_ans = '빨간색'
 
-    # Basic Card Format
-    res = {
-      "version": "2.0",
-      "template": {
-        "outputs": [
-          {
-            "basicCard": {
-              "title": "위 사진의 색깔을 맞춰보세요!",
-              "description": "빨강색 / 초록색 / 황색 / 청색",
-              "thumbnail": {
-                "imageUrl": img_link
-              },
-              "buttons": [
-                {
-                  "action": "message",
-                  "label": "빨간색",
-                  "messageText": "빨간색입니다~"
-                },
-                {
-                  "action": "message",
-                  "label": "초록색",
-                  "messageText": "초록색입니다~"
-                },
-                {
-                  "action": "message",
-                  "label": "황색",
-                  "messageText": "황색입니다~"
-                },
-                {
-                  "action": "message",
-                  "label": "청색",
-                  "messageText": "청색입니다~"
-                }
-              ]
+        # 초록색으로 퀴즈 내기
+        elif color_num == 2:
+            img_link = ''
+            cnt = 0
+            for r in result1:
+                cnt += 1
+            img_idx = random.randint(1, cnt)
+            img_link = result1[img_idx][1]
+            final_ans = '초록색'
+
+        # 황색으로 퀴즈 내기
+        if color_num == 3:
+            img_link = ''
+            cnt = 0
+            for r in result1:
+                cnt += 1
+            img_idx = random.randint(1, cnt)
+            img_link = result1[img_idx][1]
+            final_ans = '황색'
+
+        # 청색으로 퀴즈 내기
+        else:
+            img_link = ''
+            cnt = 0
+            for r in result2:
+                cnt += 1
+            img_idx = random.randint(1, cnt)
+            img_link = result2[img_idx][1]
+            final_ans = '청색'
+
+        # 커서와 연결 종료
+        cursor.close()
+
+        # 답이 빨간색인 경우
+        if final_ans == '빨간색':
+            # Basic Card Format (빨간인 경우)
+            res = {
+              "version": "2.0",
+              "template": {
+                "outputs": [
+                  {
+                    "carousel": {
+                      "type": "basicCard",
+                      "items": [
+                        {
+                          "title": "위 사진의 색깔을 맞춰보세요!",
+                          "description": "빨강색 / 초록색",
+                          "thumbnail": {
+                            "imageUrl": img_link
+                          },
+                          "buttons": [
+                            {
+                              "action": "message",
+                              "label": "빨간색",
+                              "messageText": f"답은 {final_ans}입니다. 정답입니다!"
+                            },
+                            {
+                              "action": "message",
+                              "label": "초록색",
+                              "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                            }
+                          ]
+                        },
+                        {
+                          "title": "위 사진의 색깔을 맞춰보세요!",
+                          "description": "황색 / 청색",
+                          "thumbnail": {
+                            "imageUrl": img_link
+                          },
+                          "buttons": [
+                            {
+                              "action": "message",
+                              "label": "황색",
+                              "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                            },
+                            {
+                              "action": "message",
+                              "label": "청색",
+                              "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
             }
-          }
-        ]
-      }
-    }
-    return flask.jsonify(res)
+
+        # 답이 초록색인 경우
+        if final_ans == '초록색':
+            # Basic Card Format (빨간인 경우)
+            res = {
+              "version": "2.0",
+              "template": {
+                "outputs": [
+                  {
+                    "carousel": {
+                      "type": "basicCard",
+                      "items": [
+                        {
+                          "title": "위 사진의 색깔을 맞춰보세요!",
+                          "description": "빨강색 / 초록색",
+                          "thumbnail": {
+                            "imageUrl": img_link
+                          },
+                          "buttons": [
+                            {
+                              "action": "message",
+                              "label": "빨간색",
+                              "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                            },
+                            {
+                              "action": "message",
+                              "label": "초록색",
+                              "messageText": f"답은 {final_ans}입니다. 정답입니다!"
+                            }
+                          ]
+                        },
+                        {
+                          "title": "위 사진의 색깔을 맞춰보세요!",
+                          "description": "황색 / 청색",
+                          "thumbnail": {
+                            "imageUrl": img_link
+                          },
+                          "buttons": [
+                            {
+                              "action": "message",
+                              "label": "황색",
+                              "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                            },
+                            {
+                              "action": "message",
+                              "label": "청색",
+                              "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+
+        # 답이 황색인 경우
+        if final_ans == '황색':
+            # Basic Card Format (빨간인 경우)
+            res = {
+              "version": "2.0",
+              "template": {
+                "outputs": [
+                  {
+                    "carousel": {
+                      "type": "basicCard",
+                      "items": [
+                        {
+                          "title": "위 사진의 색깔을 맞춰보세요!",
+                          "description": "빨강색 / 초록색",
+                          "thumbnail": {
+                            "imageUrl": img_link
+                          },
+                          "buttons": [
+                            {
+                              "action": "message",
+                              "label": "빨간색",
+                              "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                            },
+                            {
+                              "action": "message",
+                              "label": "초록색",
+                              "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                            }
+                          ]
+                        },
+                        {
+                          "title": "위 사진의 색깔을 맞춰보세요!",
+                          "description": "황색 / 청색",
+                          "thumbnail": {
+                            "imageUrl": img_link
+                          },
+                          "buttons": [
+                            {
+                              "action": "message",
+                              "label": "황색",
+                              "messageText": f"답은 {final_ans}입니다. 정답입니다!"
+                            },
+                            {
+                              "action": "message",
+                              "label": "청색",
+                              "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+
+        # 답이 청색인 경우
+        else:
+            # Basic Card Format (빨간인 경우)
+            res = {
+              "version": "2.0",
+              "template": {
+                "outputs": [
+                  {
+                    "carousel": {
+                      "type": "basicCard",
+                      "items": [
+                        {
+                          "title": "위 사진의 색깔을 맞춰보세요!",
+                          "description": "빨강색 / 초록색",
+                          "thumbnail": {
+                            "imageUrl": img_link
+                          },
+                          "buttons": [
+                            {
+                              "action": "message",
+                              "label": "빨간색",
+                              "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                            },
+                            {
+                              "action": "message",
+                              "label": "초록색",
+                              "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                            }
+                          ]
+                        },
+                        {
+                          "title": "위 사진의 색깔을 맞춰보세요!",
+                          "description": "황색 / 청색",
+                          "thumbnail": {
+                            "imageUrl": img_link
+                          },
+                          "buttons": [
+                            {
+                              "action": "message",
+                              "label": "황색",
+                              "messageText": f"답은 {final_ans}입니다. 오답입니다!"
+                            },
+                            {
+                              "action": "message",
+                              "label": "청색",
+                              "messageText": f"답은 {final_ans}입니다. 청색입니다!"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+        return flask.jsonify(res)
 
 
 # 사용자가 어떤 색각이상자인지 저장
