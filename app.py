@@ -943,10 +943,10 @@ def quiz():
         if final_ans == '황색':
             # Basic Card Format (빨간인 경우)
             res = {
-              "version": "2.0",
-              "template": {
+                "version": "2.0",
+                "template": {
                 "outputs": [
-                  {
+                    {
                     "carousel": {
                       "type": "basicCard",
                       "items": [
