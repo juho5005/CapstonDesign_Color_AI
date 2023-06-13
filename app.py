@@ -171,7 +171,7 @@ def dashboard():
 def dashboard1():
     cursor = conn.cursor()
 
-    select_query = "SELECT image_blob, user_id, user_type, image_result FROM images"
+    select_query = "SELECT image_blob, user_id, user_type, image_result, red, green, yellow, blue FROM images"
     cursor.execute(select_query)
     results = cursor.fetchall()
 
@@ -183,11 +183,19 @@ def dashboard1():
         user_id = result[1]
         user_type = result[2]
         image_result = result[3]
+        red = result[4]
+        green = result[5]
+        yellow = result[6]
+        blue = result[7]
         image = {
             'image_blob': image_encoded,
             'user_id': user_id,
             'user_type': user_type,
-            'image_result': image_result
+            'image_result': image_result,
+            'red': red,
+            'green': green,
+            'yellow': yellow,
+            'blue': blue
         }
         images.append(image)
 
@@ -202,8 +210,8 @@ def input_info():
     if flask.request.method == 'POST':
         user_id = flask.request.form['user_id']
         username = flask.session['username']
-        
-        
+
+
         conn = mysql.connector.connect(**config)
         cursor = conn.cursor()
 
@@ -287,9 +295,9 @@ def api_first_predict():
     print("Confidence Score : ", confidence_score)
     print()
 
-    red_web_perc = round((prediction[0][0]*100), 3)
+    red_web_perc = round((prediction[0][0]*100), 2)
     red_web_perc = str(red_web_perc)
-    green_web_perc = round((prediction[0][1]*100), 3)
+    green_web_perc = round((prediction[0][1]*100), 2)
     green_web_perc = str(green_web_perc)
 
     red_perc, green_perc = \
@@ -446,6 +454,11 @@ def api_second_predict():
     elif str(class_name[2:]).strip() == 'blue':
         color = "청색"
 
+    yellow_web_perc = round((prediction[0][0]*100), 2)
+    yellow_web_perc = str(yellow_web_perc)
+    blue_web_perc = round((prediction[0][1]*100), 2)
+    blue_web_perc = str(blue_web_perc)
+
     # 사용자가 어떤 색각이상 타입인지 확인
     # 커서 시작
     conn = mysql.connector.connect(**config)
@@ -480,8 +493,8 @@ def api_second_predict():
     conn = mysql.connector.connect(**config)
     cursor = conn.cursor()
 
-    insert_query = "INSERT INTO images (image_blob, user_id, user_type, image_result) VALUES (%s, %s, %s, %s)"
-    data = (image_data, user_id, type_answer, msg)
+    insert_query = "INSERT INTO images (image_blob, user_id, user_type, image_result, yellow, blue) VALUES (%s, %s, %s, %s, %s, %s)"
+    data = (image_data, user_id, type_answer, msg, yellow_web_perc, blue_web_perc)
     cursor.execute(insert_query, data)
     conn.commit()
 
@@ -625,6 +638,15 @@ def api_third_predict():
     msg = color
     print(msg)
     
+    fred_web_perc = round((prediction[0][0]*100), 2)
+    fred_web_perc = str(fred_web_perc)
+    fgreen_web_perc = round((prediction[0][1]*100), 2)
+    fgreen_web_perc = str(fgreen_web_perc)
+    fyellow_web_perc = round((prediction[0][2]*100), 2)
+    fyellow_web_perc = str(fyellow_web_perc)
+    fblue_web_perc = round((prediction[0][3]*100), 2)
+    fblue_web_perc = str(fblue_web_perc)
+    
     # 종혁이가 짠 코드
     response = urllib.request.urlopen(saved_image_url)
     image_data = response.read()
@@ -632,8 +654,8 @@ def api_third_predict():
     conn = mysql.connector.connect(**config)
     cursor = conn.cursor()
 
-    insert_query = "INSERT INTO images (image_blob, user_id, user_type, image_result) VALUES (%s, %s, %s, %s)"
-    data = (image_data, user_id, type_answer, msg)
+    insert_query = "INSERT INTO images (image_blob, user_id, user_type, image_result, red, green, yellow, blue) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+    data = (image_data, user_id, type_answer, msg, fred_web_perc, fgreen_web_perc, fyellow_web_perc, fblue_web_perc)
     cursor.execute(insert_query, data)
     conn.commit()
 

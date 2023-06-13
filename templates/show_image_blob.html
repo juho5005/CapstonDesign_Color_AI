@@ -15,21 +15,6 @@
 </head>
 <body>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
-    <!-- <h1>사용자가 올린 이미지들</h1>
-    <div>
-        {% if images %}
-            {% for image in images %}
-                <p>사용자의 ID: {{ image.user_id }}</p>
-                <p>사용자의 색각이상 Type : {{image.user_type}}</p>
-                <img src="data:image/jpeg;base64,{{ image.image_blob|safe }}" alt="Image" class="image"><br>
-                <p>AI를 이용한 이미지 색 판별 결과 : {{image.image_result}}</p>
-                <hr>
-            {% endfor %}
-        {% else %}
-            <p>이미지가 없습니다.</p>
-        {% endif %}
-    </div> -->
-
     {% if images %}
         {% for image in images %}
             <div class="card" style="text-align: center;">
@@ -38,8 +23,19 @@
                     <h4 class="card-title">AI를 이용한 이미지 색 판별 결과 : {{image.image_result}}</h4>
                     <h4 class="card-text">사용자의 ID: {{ image.user_id }}</h4>
                     <h4>사용자의 색각이상 Type : {{image.user_type}}</h4>
-                    <h4>빨간색 비율: {{ image.red }}%</h4>
-                    <h4>초록색 비율: {{ image.green }}%</h4>
+                    
+                    {% if image.red and image.green and image.yellow and image.blue %}
+                        <h4>빨간색 비율: {{ image.red }}%</h4>
+                        <h4>초록색 비율: {{ image.green }}%</h4>
+                        <h4>황색 비율: {{ image.yellow }}%</h4>
+                        <h4>청색 비율: {{ image.blue }}%</h4>
+                    {% elif image.red and image.green %}
+                        <h4>빨간색 비율: {{ image.red }}%</h4>
+                        <h4>초록색 비율: {{ image.green }}%</h4>     
+                    {% else %}
+                        <h4>황색 비율: {{ image.yellow }}%</h4>
+                        <h4>청색 비율: {{ image.blue }}%</h4>
+                    {% endif %}
                     <a href="#" class="btn btn-primary">사진 보기</a>
                 </div>
             </div>
