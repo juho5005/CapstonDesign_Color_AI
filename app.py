@@ -1,3 +1,4 @@
+# Modules
 import tensorflow
 import flask
 import urllib.request
@@ -8,6 +9,7 @@ import mysql.connector
 import random
 import base64
 from flask import redirect
+
 
 # Use app with Flask Server
 app = flask.Flask(__name__)
@@ -22,6 +24,7 @@ app.secret_key = "your_secret_key"
 first_class_names = None
 first_model = None
 
+
 # Predefine second_class_names, second_model
 '''
 0 yellow
@@ -29,6 +32,7 @@ first_model = None
 '''
 second_class_names = None
 second_model = None
+
 
 # Predefine third_class_names, third_model
 '''
@@ -40,14 +44,18 @@ second_model = None
 third_class_names = None
 third_model = None
 
+
 # Variables with Quiz
 quiz_cnt = 0
 quiz_O = 0
 quiz_X = 0
 
+
+# The number of Quiz
 whole_quiz_cnt = 10
 
 
+# Use Mysql with Server
 config = {
     'user': 'cray7',
     'password': 'dgu1234!',
@@ -58,7 +66,7 @@ config = {
 conn = mysql.connector.connect(**config)
 
 
-# Main home page
+# Main Homepage
 @app.route('/', methods=['GET', 'POST'])
 def main():
     if 'username' in flask.session:
@@ -84,6 +92,7 @@ def main():
         return flask.render_template('main.html', username=flask.session.get('username'))
 
 
+# Login Page
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'username' in flask.session:
@@ -105,7 +114,9 @@ def login():
             return '등록되지 않는 사용자이거나 비밀번호가 틀립니다!'
     else:
         return flask.render_template('login.html')
-    
+
+
+# Register Page
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if 'username' in flask.session:
@@ -126,12 +137,15 @@ def register():
     else:
         return flask.render_template('register.html')
 
-    
+
+# Logout Page
 @app.route('/logout')
 def logout():
     flask.session.clear()
     return redirect('/')
 
+
+# Dashboard Page
 @app.route('/dashboard')
 def dashboard():
     if 'username' in flask.session:
@@ -167,6 +181,8 @@ def dashboard():
     else:
         return flask.redirect('/login')
 
+
+# Dashboard with images which users test
 @app.route('/dashboard1')
 def dashboard1():
     cursor = conn.cursor()
@@ -198,10 +214,10 @@ def dashboard1():
             'blue': blue
         }
         images.append(image)
-
     return flask.render_template('show_image_blob.html', images=images)
 
-#user_id를 입력받는 코드
+
+# Get user_id
 @app.route('/input_info', methods=['GET', 'POST'])
 def input_info():
     if 'username' not in flask.session:
@@ -227,8 +243,7 @@ def input_info():
     return flask.render_template('input_info.html')
 
 
-
-# run first model
+# Run first model [Red, Green]
 def load_first_model():
     global first_class_names, first_model
 
@@ -236,7 +251,7 @@ def load_first_model():
     first_model = tensorflow.keras.models.load_model('/workspace/final_test/Color_Detection_Models/keras_first_model.h5', compile=False)
     
 
-# first model api
+# first model API [Red, Green]
 @app.route("/api/first/predict", methods=["POST"])
 def api_first_predict():
     global type_dic
@@ -278,10 +293,10 @@ def api_first_predict():
     normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
     data[0] = normalized_image_array
 
-    # 모델을 돌리는 곳 이게 좀 오래걸림
+    # run model
     prediction = first_model.predict(data)
 
-    # 가장 확률이 높은 인덱스를 찾아주는 것
+    # find largest prediction
     index = np.argmax(prediction)
 
     # 가장 확률이 높은 색상을 (index)를 통해 class_name에 넣어주는 것
@@ -336,8 +351,7 @@ def api_first_predict():
     msg = color
     print(msg)
 
-
-    # 종혁이가 짠 코드
+    # images with blob
     response = urllib.request.urlopen(saved_image_url)
     image_data = response.read()
 
@@ -380,7 +394,7 @@ def api_first_predict():
     return flask.jsonify(res)
 
 
-# run second model
+# Run second model [Yellow, Blue]
 def load_second_model():
     global second_class_names, second_model
 
@@ -388,7 +402,7 @@ def load_second_model():
     second_model = tensorflow.keras.models.load_model('/workspace/final_test/Color_Detection_Models/keras_second_model.h5', compile=False)
     
     
-# second model api
+# second model API [Yellow, Blue]
 @app.route("/api/second/predict", methods=["POST"])
 def api_second_predict():
     global second_class_names, second_model
@@ -429,10 +443,10 @@ def api_second_predict():
     normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
     data[0] = normalized_image_array
 
-    # 모델을 돌리는 곳 이게 좀 오래걸림
+    # Run Model
     prediction = second_model.predict(data)
 
-    # 가장 확률이 높은 인덱스를 찾아주는 것
+    # Find largest prediction
     index = np.argmax(prediction)
 
     # 가장 확률이 높은 색상을 (index)를 통해 class_name에 넣어주는 것
@@ -486,7 +500,7 @@ def api_second_predict():
     msg = color
     print(msg)
 
-    # 종혁이가 짠 코드
+    # images with blob
     response = urllib.request.urlopen(saved_image_url)
     image_data = response.read()
 
@@ -529,7 +543,7 @@ def api_second_predict():
     return flask.jsonify(res)
 
 
-# run third model
+# Run third model [Red, Green, Yellow, Blue]
 def load_third_model():
     global third_class_names, third_model
 
@@ -537,7 +551,7 @@ def load_third_model():
     third_model = tensorflow.keras.models.load_model('/workspace/final_test/Color_Detection_Models/keras_third_model.h5', compile=False)
 
 
-# third model api
+# third model API [Red, Green, Yellow, Blue]
 @app.route("/api/third/predict", methods=["POST"])
 def api_third_predict():
     global third_class_names, third_model
@@ -578,10 +592,10 @@ def api_third_predict():
     normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
     data[0] = normalized_image_array
 
-    # 모델을 돌리는 곳 이게 좀 오래걸림
+    # Run Model
     prediction = third_model.predict(data)
 
-    # 가장 확률이 높은 인덱스를 찾아주는 것
+    # Find the largest prediction
     index = np.argmax(prediction)
 
     # 가장 확률이 높은 색상을 (index)를 통해 class_name에 넣어주는 것
@@ -647,7 +661,7 @@ def api_third_predict():
     fblue_web_perc = round((prediction[0][3]*100), 2)
     fblue_web_perc = str(fblue_web_perc)
     
-    # 종혁이가 짠 코드
+    # images with blob
     response = urllib.request.urlopen(saved_image_url)
     image_data = response.read()
 
@@ -689,7 +703,8 @@ def api_third_predict():
     print(res)
     return flask.jsonify(res)
 
-#퀴즈 결과에 따른 의사의 진단
+
+# Doctor's dianosis
 @app.route('/quiz_result')
 def quiz_result():
     if 'username' not in flask.session:
@@ -716,9 +731,6 @@ def quiz_result():
         return flask.render_template('quiz_result_not_good.html')
     elif wrong_count >= 7:
         return flask.render_template('quiz_result_recommend.html')
-
-
-
 
 
 # Quiz
