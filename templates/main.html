@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Main Page</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Main Page</h1>
+        <div class="mt-3">
+            {% if 'username' in session %}
+            <p>Welcome, {{ session['username'] }}!</p>
+            <a href="/logout" class="btn btn-danger">Logout</a>
+            {% else %}
+            <a href="/login" class="btn btn-primary">Login</a>
+            <a href="/register" class="btn btn-success">Register</a>
+            {% endif %}
+            <a href="/dashboard" class="btn btn-primary">진단서 보기</a>
+            <a href="/dashboard1" class="btn btn-primary">유저의 저장된 이미지 보기</a>
+            <a href="/quiz_result" class="btn btn-primary">퀴즈 결과 확인하기</a>
+            <a href="/input_info" class="btn btn-primary">내 정보</a>
+        </div>
+    </div>
+</body>
+</html>

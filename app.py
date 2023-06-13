@@ -6,9 +6,12 @@ import numpy as np
 import ast
 import mysql.connector
 import random
+import base64
+from flask import redirect
 
 # Use app with Flask Server
 app = flask.Flask(__name__)
+app.secret_key = "your_secret_key"
 
 
 # Predefine first_class_names, first_model
@@ -37,7 +40,7 @@ second_model = None
 third_class_names = None
 third_model = None
 
-# Variables with Quiz 
+# Variables with Quiz
 quiz_cnt = 0
 quiz_O = 0
 quiz_X = 0
@@ -56,9 +59,165 @@ conn = mysql.connector.connect(**config)
 
 
 # Main home page
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def main():
-    return '안녕'
+    if 'username' in flask.session:
+        username = flask.session['username']
+        cursor = conn.cursor()
+        select_query = "SELECT type1 FROM users WHERE username = %s"
+        cursor.execute(select_query, (username,))
+        row = cursor.fetchone()
+        user_type1 = row[0] if row else None
+        cursor.close()
+        flask.session['type1'] = user_type1
+    else:
+        flask.session['type1'] = None
+
+    if flask.request.method == 'POST':
+        username = flask.request.form.get('username')
+        if username:
+            flask.session['username'] = username
+        else:
+            flask.session.pop('username', None)
+        return flask.redirect('/')
+    else:
+        return flask.render_template('main.html', username=flask.session.get('username'))
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'username' in flask.session:
+        return flask.redirect('/')
+    elif flask.request.method == 'POST':
+        username = flask.request.form['username']
+        password = flask.request.form['password']
+
+        cursor = conn.cursor()
+
+        select_query = "SELECT * FROM users WHERE username = %s AND password = %s"
+        cursor.execute(select_query, (username, password))
+        user = cursor.fetchone()
+
+        if user:
+            flask.session['username'] = user[1]
+            return flask.redirect('/')
+        else:
+            return '등록되지 않는 사용자이거나 비밀번호가 틀립니다!'
+    else:
+        return flask.render_template('login.html')
+    
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if 'username' in flask.session:
+        return flask.redirect('/')
+    elif flask.request.method == 'POST':
+        username = flask.request.form['username']
+        password = flask.request.form['password']
+        type1 = flask.request.form['type1']
+
+        cursor = conn.cursor()
+
+        insert_query = "INSERT INTO users (username, password, type1) VALUES (%s, %s, %s)"
+        cursor.execute(insert_query, (username, password, type1))
+        conn.commit()
+
+        flask.session['username'] = username
+        return flask.redirect('/')
+    else:
+        return flask.render_template('register.html')
+
+    
+@app.route('/logout')
+def logout():
+    flask.session.clear()
+    return redirect('/')
+
+@app.route('/dashboard')
+def dashboard():
+    if 'username' in flask.session:
+        username = flask.session['username']
+
+        cursor = conn.cursor()
+
+        select_query = "SELECT type1 FROM users WHERE username = %s"
+        cursor.execute(select_query, (username,))
+        row = cursor.fetchone()
+        user_type1 = row[0] if row else None
+
+        cursor.close()
+
+        if user_type1 == '약한 적록색약':
+            flask.session['type1'] = user_type1
+            return flask.render_template('weak_protanopia.html')
+        elif user_type1 == '강한 적록색약':
+            flask.session['type1'] = user_type1
+            return flask.render_template('strong_protanopia.html')
+        elif user_type1 == '약한 황청색약':
+            flask.session['type1'] = user_type1
+            return flask.render_template('weak_deuteranopia.html')
+        elif user_type1 == '강한 황청색약':
+            flask.session['type1'] = user_type1
+            return flask.render_template('strong_deuteranopia.html')
+        elif user_type1 is None:
+            flask.session.pop('type1', None)
+            return flask.render_template('no_test_user.html')
+        else:
+            flask.session.pop('type1', None)
+            return flask.render_template('no_test_user.html')
+    else:
+        return flask.redirect('/login')
+
+@app.route('/dashboard1')
+def dashboard1():
+    cursor = conn.cursor()
+
+    select_query = "SELECT image_blob, user_id, user_type, image_result FROM images"
+    cursor.execute(select_query)
+    results = cursor.fetchall()
+
+    cursor.close()
+    images = []
+    for result in results:
+        image_data = result[0]
+        image_encoded = base64.b64encode(image_data).decode('utf-8')
+        user_id = result[1]
+        user_type = result[2]
+        image_result = result[3]
+        image = {
+            'image_blob': image_encoded,
+            'user_id': user_id,
+            'user_type': user_type,
+            'image_result': image_result
+        }
+        images.append(image)
+
+    return flask.render_template('show_image_blob.html', images=images)
+
+#user_id를 입력받는 코드
+@app.route('/input_info', methods=['GET', 'POST'])
+def input_info():
+    if 'username' not in flask.session:
+        return '로그인이 필요합니다.'
+
+    if flask.request.method == 'POST':
+        user_id = flask.request.form['user_id']
+        username = flask.session['username']
+        
+        
+        conn = mysql.connector.connect(**config)
+        cursor = conn.cursor()
+
+        update_query = "UPDATE users SET user_id = %s WHERE username = %s"
+        cursor.execute(update_query, (user_id, username))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        return flask.redirect('/')
+
+    return flask.render_template('input_info.html')
+
 
 
 # run first model
@@ -128,6 +287,11 @@ def api_first_predict():
     print("Confidence Score : ", confidence_score)
     print()
 
+    red_web_perc = round((prediction[0][0]*100), 3)
+    red_web_perc = str(red_web_perc)
+    green_web_perc = round((prediction[0][1]*100), 3)
+    green_web_perc = str(green_web_perc)
+
     red_perc, green_perc = \
     str(round(prediction[0][0] * 100, 2)), str(round(prediction[0][1] * 100, 2))
 
@@ -138,6 +302,7 @@ def api_first_predict():
 
     # 사용자가 어떤 색각이상 타입인지 확인
     # 커서 시작
+    conn = mysql.connector.connect(**config)
     cursor = conn.cursor()
     query = "SELECT * FROM user_type"
     cursor.execute(query)
@@ -158,9 +323,26 @@ def api_first_predict():
 
     # 커서와 연결 종료
     cursor.close()
+    conn.close()
 
     msg = color
     print(msg)
+
+
+    # 종혁이가 짠 코드
+    response = urllib.request.urlopen(saved_image_url)
+    image_data = response.read()
+
+    conn = mysql.connector.connect(**config)
+    cursor = conn.cursor()
+
+    insert_query = "INSERT INTO images (image_blob, user_id, user_type, image_result, red, green) VALUES (%s, %s, %s, %s, %s, %s)"
+    data = (image_data, user_id, type_answer, color, red_web_perc, green_web_perc)
+    cursor.execute(insert_query, data)
+    conn.commit()
+
+    cursor.close()
+    conn.close()
 
     # Basic Card Format
     res = {
@@ -266,6 +448,7 @@ def api_second_predict():
 
     # 사용자가 어떤 색각이상 타입인지 확인
     # 커서 시작
+    conn = mysql.connector.connect(**config)
     cursor = conn.cursor()
     query = "SELECT * FROM user_type"
     cursor.execute(query)
@@ -289,6 +472,21 @@ def api_second_predict():
 
     msg = color
     print(msg)
+
+    # 종혁이가 짠 코드
+    response = urllib.request.urlopen(saved_image_url)
+    image_data = response.read()
+
+    conn = mysql.connector.connect(**config)
+    cursor = conn.cursor()
+
+    insert_query = "INSERT INTO images (image_blob, user_id, user_type, image_result) VALUES (%s, %s, %s, %s)"
+    data = (image_data, user_id, type_answer, msg)
+    cursor.execute(insert_query, data)
+    conn.commit()
+
+    cursor.close()
+    conn.close()
 
     # Basic Card Format
     res = {
@@ -401,6 +599,7 @@ def api_third_predict():
         
     # 사용자가 어떤 색각이상 타입인지 확인
     # 커서 시작
+    conn = mysql.connector.connect(**config)
     cursor = conn.cursor()
     query = "SELECT * FROM user_type"
     cursor.execute(query)
@@ -413,6 +612,7 @@ def api_third_predict():
             break
 
     # 커서 시작
+    conn = mysql.connector.connect(**config)
     cursor = conn.cursor()
     insert_query = "INSERT INTO quiz (user_id, type1, image, answer) VALUES (%s, %s, %s, %s)"
     data = (user_id, type_answer, saved_image_url, color)
@@ -424,6 +624,21 @@ def api_third_predict():
 
     msg = color
     print(msg)
+    
+    # 종혁이가 짠 코드
+    response = urllib.request.urlopen(saved_image_url)
+    image_data = response.read()
+
+    conn = mysql.connector.connect(**config)
+    cursor = conn.cursor()
+
+    insert_query = "INSERT INTO images (image_blob, user_id, user_type, image_result) VALUES (%s, %s, %s, %s)"
+    data = (image_data, user_id, type_answer, msg)
+    cursor.execute(insert_query, data)
+    conn.commit()
+
+    cursor.close()
+    conn.close()
 
     # Basic Card Format
     res = {
@@ -451,6 +666,37 @@ def api_third_predict():
     }
     print(res)
     return flask.jsonify(res)
+
+#퀴즈 결과에 따른 의사의 진단
+@app.route('/quiz_result')
+def quiz_result():
+    if 'username' not in flask.session:
+        return '로그인이 필요합니다.'
+
+    user_id = flask.session['username']
+
+    cursor = conn.cursor()
+
+    select_query = "SELECT quiz_history.wrong FROM quiz_history, users WHERE quiz_history.user_id = users.user_id AND users.user_id = %s"
+    cursor.execute(select_query, (user_id,))
+    result = cursor.fetchone()
+
+    cursor.close()
+
+    if result is None:
+        wrong_count = 0
+    else:
+        wrong_count = result[0]
+
+    if wrong_count <= 3:
+        return flask.render_template('quiz_result_good.html')
+    elif wrong_count >= 5 and wrong_count < 7:
+        return flask.render_template('quiz_result_not_good.html')
+    elif wrong_count >= 7:
+        return flask.render_template('quiz_result_recommend.html')
+
+
+
 
 
 # Quiz
